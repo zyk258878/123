@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>最短路径可视化工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .control-panel {
+            flex: 1;
+            min-width: 300px;
+            background-color: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+        
+        .visualization {
+            flex: 2;
+            min-width: 500px;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .section-title {
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 8px;
+        }
+        
+        .input-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #444;
+        }
+        
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border 0.3s;
+        }
+        
+        input:focus {
+            border-color: #6a11cb;
+            outline: none;
+        }
+        
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .btn-primary {
+            background-color: #6a11cb;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #5a0db3;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background-color: #f0f0f0;
+            color: #333;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #e0e0e0;
+        }
+        
+        .btn-success {
+            background-color: #2ecc71;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background-color: #27ae60;
+            transform: translateY(-2px);
+        }
+        
+        .btn-danger {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        
+        .canvas-container {
+            flex-grow: 1;
+            padding: 20px;
+            position: relative;
+        }
+        
+        #canvas {
+            width: 100%;
+            height: 100%;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        
+        .points-list {
+            margin-top: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 10px;
+        }
+        
+        .point-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .point-item:last-child {
+            border-bottom: none;
+        }
+        
+        .point-number {
+            font-weight: bold;
+            color: #6a11cb;
+        }
+        
+        .point-coords {
+            font-family: monospace;
+        }
+        
+        .result-panel {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        
+        .result-title {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        
+        .path-length {
+            font-size: 1.5rem;
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        
+        .path-order {
+            margin-top: 10px;
+            font-family: monospace;
+            background-color: white;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #eee;
+        }
+        
+        .algorithm-info {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e8f4fc;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #777;
+            font-size: 0.9rem;
+            margin-top: 20px;
+        }
+        
+        @media (max-width: 1000px) {
+            .content {
+                flex-direction: column;
+            }
+            
+            .control-panel, .visualization {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>最短路径可视化工具</h1>
+            <p class="subtitle">输入二维坐标点，第一个点为起点，最后一个点为终点，系统将自动计算经过所有点且只经过一次的最短路径。</p>
+        </header>
+        
+        <div class="content">
+            <div class="control-panel">
+                <h2 class="section-title">控制面板</h2>
+                
+                <div class="input-group">
+                    <label for="xInput">X 坐标:</label>
+                    <input type="number" id="xInput" placeholder="输入X坐标 (0-800)" min="0" max="800" value="100">
+                </div>
+                
+                <div class="input-group">
+                    <label for="yInput">Y 坐标:</label>
+                    <input type="number" id="yInput" placeholder="输入Y坐标 (0-600)" min="0" max="600" value="100">
+                </div>
+                
+                <div class="input-group">
+                    <button class="btn btn-primary" id="addPointBtn">添加坐标点</button>
+                    <button class="btn btn-secondary" id="addRandomBtn">随机添加点</button>
+                    <button class="btn btn-danger" id="clearBtn">清除所有点</button>
+                </div>
+                
+                <div class="input-group">
+                    <h3 class="section-title">坐标点列表</h3>
+                    <div class="points-list" id="pointsList">
+                        <div class="point-item">
+                            <span class="point-number">起点</span>
+                            <span class="point-coords">(100, 100)</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <button class="btn btn-success" id="calculateBtn">计算最短路径</button>
+                    <p style="margin-top: 10px; font-size: 0.9rem; color: #666;">注意：第一个点为起点，最后一个点为终点</p>
+                </div>
+                
+                <div class="result-panel">
+                    <h3 class="result-title">计算结果</h3>
+                    <p>路径长度: <span class="path-length" id="pathLength">--</span></p>
+                    <p>路径顺序: <span class="path-order" id="pathOrder">--</span></p>
+                </div>
+                
+                <div class="algorithm-info">
+                    <p><strong>算法说明:</strong> 这是一个旅行商问题(TSP)的变种，起点和终点固定。本工具使用最近邻算法寻找近似最短路径。对于大量点，精确解需要指数级时间，因此使用启发式算法。</p>
+                </div>
+            </div>
+            
+            <div class="visualization">
+                <h2 class="section-title">可视化画布</h2>
+                <div class="canvas-container">
+                    <canvas id="canvas" width="800" height="600"></canvas>
+                </div>
+                <div style="padding: 0 20px 20px;">
+                    <p><strong>使用说明:</strong> 点击画布添加点，或使用左侧控制面板输入坐标。至少需要2个点才能计算路径。</p>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>最短路径可视化工具 &copy; 2023 | 使用最近邻算法计算近似最短路径</p>
+        </footer>
+    </div>
+
+    <script>
+        // 初始化变量
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const xInput = document.getElementById('xInput');
+        const yInput = document.getElementById('yInput');
+        const addPointBtn = document.getElementById('addPointBtn');
+        const addRandomBtn = document.getElementById('addRandomBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const calculateBtn = document.getElementById('calculateBtn');
+        const pointsList = document.getElementById('pointsList');
+        const pathLength = document.getElementById('pathLength');
+        const pathOrder = document.getElementById('pathOrder');
+        
+        let points = [{x: 100, y: 100}]; // 初始点
+        let shortestPath = [];
+        let shortestDistance = 0;
+        
+        // 绘制函数
+        function draw() {
+            // 清空画布
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 绘制网格背景
+            drawGrid();
+            
+            // 绘制所有点
+            points.forEach((point, index) => {
+                drawPoint(point.x, point.y, index);
+            });
+            
+            // 如果已经计算了最短路径，绘制路径
+            if (shortestPath.length > 0) {
+                drawPath();
+            }
+        }
+        
+        // 绘制网格
+        function drawGrid() {
+            ctx.strokeStyle = '#f0f0f0';
+            ctx.lineWidth = 1;
+            
+            // 绘制垂直线
+            for (let x = 0; x <= canvas.width; x += 50) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            
+            // 绘制水平线
+            for (let y = 0; y <= canvas.height; y += 50) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+        }
+        
+        // 绘制点
+        function drawPoint(x, y, index) {
+            ctx.beginPath();
+            ctx.arc(x, y, 8, 0, Math.PI * 2);
+            
+            // 根据点的类型设置颜色：起点绿色，终点红色，其他点蓝色
+            if (index === 0) {
+                ctx.fillStyle = '#2ecc71'; // 起点绿色
+            } else if (index === points.length - 1 && points.length > 1) {
+                ctx.fillStyle = '#e74c3c'; // 终点红色
+            } else {
+                ctx.fillStyle = '#3498db'; // 中间点蓝色
+            }
+            
+            ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // 绘制点的编号
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 12px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(index + 1, x, y);
+        }
+        
+        // 绘制路径
+        function drawPath() {
+            if (shortestPath.length <= 1) return;
+            
+            ctx.beginPath();
+            ctx.moveTo(points[shortestPath[0]].x, points[shortestPath[0]].y);
+            
+            for (let i = 1; i < shortestPath.length; i++) {
+                const pointIndex = shortestPath[i];
+                ctx.lineTo(points[pointIndex].x, points[pointIndex].y);
+            }
+            
+            ctx.strokeStyle = '#e74c3c';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            
+            // 绘制路径上的箭头
+            for (let i = 0; i < shortestPath.length - 1; i++) {
+                const startIndex = shortestPath[i];
+                const endIndex = shortestPath[i + 1];
+                drawArrow(
+                    points[startIndex].x, points[startIndex].y,
+                    points[endIndex].x, points[endIndex].y
+                );
+            }
+        }
+        
+        // 绘制箭头
+        function drawArrow(fromX, fromY, toX, toY) {
+            const headlen = 15; // 箭头长度
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(
+                toX - headlen * Math.cos(angle - Math.PI / 7),
+                toY - headlen * Math.sin(angle - Math.PI / 7)
+            );
+            ctx.lineTo(
+                toX - headlen * Math.cos(angle + Math.PI / 7),
+                toY - headlen * Math.sin(angle + Math.PI / 7)
+            );
+            ctx.lineTo(toX, toY);
+            ctx.lineTo(
+                toX - headlen * Math.cos(angle - Math.PI / 7),
+                toY - headlen * Math.sin(angle - Math.PI / 7)
+            );
+            
+            ctx.fillStyle = '#e74c3c';
+            ctx.fill();
+        }
+        
+        // 更新点列表
+        function updatePointsList() {
+            pointsList.innerHTML = '';
+            
+            points.forEach((point, index) => {
+                const pointItem = document.createElement('div');
+                pointItem.className = 'point-item';
+                
+                let pointType = "中间点";
+                if (index === 0) pointType = "起点";
+                if (index === points.length - 1 && points.length > 1) pointType = "终点";
+                
+                pointItem.innerHTML = `
+                    <span class="point-number">${pointType} ${index + 1}</span>
+                    <span class="point-coords">(${point.x}, ${point.y})</span>
+                `;
+                
+                pointsList.appendChild(pointItem);
+            });
+        }
+        
+        // 计算两点之间的距离
+        function distance(point1, point2) {
+            return Math.sqrt(
+                Math.pow(point2.x - point1.x, 2) + 
+                Math.pow(point2.y - point1.y, 2)
+            );
+        }
+        
+        // 计算最短路径（使用最近邻算法）
+        function calculateShortestPath() {
+            if (points.length < 2) {
+                alert("至少需要两个点才能计算路径");
+                return;
+            }
+            
+            // 使用最近邻算法寻找近似最短路径
+            const startIndex = 0; // 起点固定为第一个点
+            const endIndex = points.length - 1; // 终点固定为最后一个点
+            
+            // 初始化未访问点集合（排除起点和终点）
+            const unvisited = [];
+            for (let i = 1; i < points.length - 1; i++) {
+                unvisited.push(i);
+            }
+            
+            // 构建路径
+            const path = [startIndex];
+            let currentIndex = startIndex;
+            let totalDistance = 0;
+            
+            // 访问所有未访问点
+            while (unvisited.length > 0) {
+                // 找到离当前点最近的点
+                let nearestIndex = -1;
+                let nearestDistance = Infinity;
+                
+                for (let i = 0; i < unvisited.length; i++) {
+                    const dist = distance(points[currentIndex], points[unvisited[i]]);
+                    if (dist < nearestDistance) {
+                        nearestDistance = dist;
+                        nearestIndex = i;
+                    }
+                }
+                
+                // 将最近点添加到路径
+                const nextIndex = unvisited[nearestIndex];
+                path.push(nextIndex);
+                totalDistance += nearestDistance;
+                currentIndex = nextIndex;
+                
+                // 从未访问集合中移除
+                unvisited.splice(nearestIndex, 1);
+            }
+            
+            // 最后连接到终点
+            const finalDistance = distance(points[currentIndex], points[endIndex]);
+            totalDistance += finalDistance;
+            path.push(endIndex);
+            
+            // 更新全局变量
+            shortestPath = path;
+            shortestDistance = totalDistance;
+            
+            // 更新UI
+            pathLength.textContent = shortestDistance.toFixed(2);
+            pathOrder.textContent = path.map(i => i + 1).join(' → ');
+            
+            // 重新绘制
+            draw();
+        }
+        
+        // 添加坐标点
+        function addPoint(x, y) {
+            points.push({x, y});
+            updatePointsList();
+            draw();
+        }
+        
+        // 事件监听器
+        addPointBtn.addEventListener('click', () => {
+            const x = parseInt(xInput.value);
+            const y = parseInt(yInput.value);
+            
+            if (isNaN(x) || isNaN(y) || x < 0 || x > 800 || y < 0 || y > 600) {
+                alert("请输入有效的坐标值 (X: 0-800, Y: 0-600)");
+                return;
+            }
+            
+            addPoint(x, y);
+            xInput.value = Math.min(x + 50, 750);
+            yInput.value = Math.min(y + 50, 550);
+        });
+        
+        addRandomBtn.addEventListener('click', () => {
+            const x = Math.floor(Math.random() * 700) + 50;
+            const y = Math.floor(Math.random() * 500) + 50;
+            addPoint(x, y);
+            
+            // 更新输入框显示最近添加的随机点
+            xInput.value = x;
+            yInput.value = y;
+        });
+        
+        clearBtn.addEventListener('click', () => {
+            points = [{x: 100, y: 100}]; // 重置为初始点
+            shortestPath = [];
+            shortestDistance = 0;
+            updatePointsList();
+            pathLength.textContent = "--";
+            pathOrder.textContent = "--";
+            draw();
+        });
+        
+        calculateBtn.addEventListener('click', calculateShortestPath);
+        
+        // 画布点击事件
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            
+            const x = (e.clientX - rect.left) * scaleX;
+            const y = (e.clientY - rect.top) * scaleY;
+            
+            addPoint(x, y);
+            
+            // 更新输入框
+            xInput.value = Math.round(x);
+            yInput.value = Math.round(y);
+        });
+        
+        // 初始化
+        updatePointsList();
+        draw();
+        
+        // 添加一些示例点以便演示
+        setTimeout(() => {
+            addPoint(200, 300);
+            addPoint(400, 200);
+            addPoint(600, 400);
+            addPoint(300, 500);
+            addPoint(700, 100);
+            
+            // 自动计算路径
+            setTimeout(calculateShortestPath, 500);
+        }, 500);
+    </script>
+</body>
+</html>
